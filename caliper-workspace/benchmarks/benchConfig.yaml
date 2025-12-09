@@ -1,0 +1,46 @@
+test:
+  name: fabric-certificate-benchmark
+  description: Performance benchmark for certificate management operations
+  workers:
+    type: local
+    number: 1
+  rounds:
+    - label: Issue Certificates
+      description: Create new certificates on the ledger
+      txDuration: 30
+      rateControl:
+        type: fixed-rate
+        opts:
+          tps: 20
+      workload:
+        module: workload/issueCertificate.js
+
+    - label: Verify Certificates
+      description: Read and verify existing certificates
+      txDuration: 20
+      rateControl:
+        type: fixed-rate
+        opts:
+          tps: 50
+      workload:
+        module: workload/verifyCertificate.js
+
+    - label: Query All Certificates
+      description: Query all certificates from the ledger
+      txDuration: 15
+      rateControl:
+        type: fixed-rate
+        opts:
+          tps: 30
+      workload:
+        module: workload/queryAllCertificates.js
+
+    - label: Revoke Certificates
+      description: Delete certificates from the ledger
+      txDuration: 20
+      rateControl:
+        type: fixed-rate
+        opts:
+          tps: 15
+      workload:
+        module: workload/revokeCertificate.js
