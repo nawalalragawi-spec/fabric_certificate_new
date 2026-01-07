@@ -5,41 +5,28 @@ const { WorkloadModuleBase } = require('@hyperledger/caliper-core');
 class RevokeCertificateWorkload extends WorkloadModuleBase {
     constructor() {
         super();
-        this.workerIndex = -1;
-        this.totalWorkers = -1;
+        this.txIndex = 0;
     }
 
-    /**
-    * تهيئة المتغيرات الأساسية للمختبر
-    */
-    async initializeWorkloadModule(workerIndex, totalWorkers, numberProtocols, workloadContext) {
-        this.workerIndex = workerIndex;
-        this.totalWorkers = totalWorkers;
-    }
-
-    /**
-    * الدالة الأساسية لتنفيذ عملية إلغاء الشهادة
-    */
     async submitTransaction() {
-        // توليد معرف شهادة لمحاولة إلغائه
-        // ملاحظة: في الاختبارات الحقيقية، يجب أن يكون المعرف موجوداً مسبقاً في الليدجر
-        // هنا نقوم بإنشاء معرف بناءً على نمط التسمية في ملف issueCertificate
-        const certId = `Cert_${this.workerIndex}_${Math.floor(Math.random() * 100)}`;
+        this.txIndex++;
+        
+        // استخدام نفس نمط المعرف (ID) الذي تم استخدامه في مرحلة الإصدار (Issue)
+        // ملاحظة: يجب أن تكون هذه الشهادات قد أُنشئت بالفعل في مرحلة سابقة من الاختبار
+        const certID = `CERT_${this.workerIndex}_${this.txIndex}`;
 
-        const requestSettings = {
+        const request = {
             contractId: 'basic',
-            contractFunction: 'RevokeCertificate',
-            contractArguments: [certId],
-            readOnly: false // هذه عملية كتابة (حذف) لذا تتطلب إجماعاً
+            // استدعاء دالة الإلغاء بدلاً من الحذف الفيزيائي
+            contractFunction: 'RevokeCertificate', 
+            contractArguments: [certID],
+            readOnly: false
         };
 
-        await this.sutAdapter.sendRequests(requestSettings);
+        await this.sutAdapter.sendRequests(request);
     }
 }
 
-/**
- * تصدير الدالة ليتمكن Caliper من تشغيلها
- */
 function createWorkloadModule() {
     return new RevokeCertificateWorkload();
 }
