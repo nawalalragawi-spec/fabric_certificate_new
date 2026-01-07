@@ -2,25 +2,33 @@
 
 const { WorkloadModuleBase } = require('@hyperledger/caliper-core');
 
-class QueryAllWorkload extends WorkloadModuleBase {
+class QueryAllCertificatesWorkload extends WorkloadModuleBase {
     constructor() {
         super();
     }
 
+    /**
+    * الدالة الأساسية التي تنفذ عملية الاستعلام
+    */
     async submitTransaction() {
-        const request = {
-            contractId: 'basic',
-            contractFunction: 'GetAllAssets',
-            contractArguments: [],
-            readOnly: true
+        // إعداد إعدادات الطلب
+        // نستخدم 'GetAllCertificates' وهي الدالة التي أضفناها في عقد Go
+        const requestSettings = {
+            contractId: 'basic', 
+            contractFunction: 'GetAllCertificates',
+            contractArguments: [], // هذه الدالة لا تحتاج بارامترات في العقد الذكي
+            readOnly: true // تحديد أنها عملية قراءة فقط لتحسين الأداء في الاختبار
         };
 
-        await this.sutAdapter.sendRequests(request);
+        await this.sutAdapter.sendRequests(requestSettings);
     }
 }
 
+/**
+ * تصدير الدالة ليتمكن Caliper من تشغيلها
+ */
 function createWorkloadModule() {
-    return new QueryAllWorkload();
+    return new QueryAllCertificatesWorkload();
 }
 
 module.exports.createWorkloadModule = createWorkloadModule;
