@@ -1,30 +1,36 @@
 'use strict';
 
 const { WorkloadModuleBase } = require('@hyperledger/caliper-core');
-const crypto = require('crypto');
 
 class IssueCertificateWorkload extends WorkloadModuleBase {
     constructor() {
         super();
-    }
-
-    async initializeWorkloadModule(workerIndex, totalWorkers, numberProtocols, workloadContext) {
-        await super.initializeWorkloadModule(workerIndex, totalWorkers, numberProtocols, workloadContext);
+        this.txIndex = 0;
     }
 
     async submitTransaction() {
-        const certId = `Cert_${this.workerIndex}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-        const owner = 'Student_' + Math.floor(Math.random() * 1000);
-        const issuer = 'University_Authority';
-        const issueDate = new Date().toISOString();
-        const randomContent = crypto.randomBytes(20).toString('hex');
-        const certHash = crypto.createHash('sha256').update(randomContent).digest('hex');
+        this.txIndex++;
+        
+        // إنشاء بيانات تجريبية فريدة لكل عملية إصدار
+        const certID = `CERT_${this.workerIndex}_${this.txIndex}`;
+        const studentName = `Student_${this.workerIndex}_${this.txIndex}`;
+        const degree = 'Bachelor of Computer Science';
+        const issuer = 'Digital University';
+        // محاكاة بصمة رقمية (Hash) فريدة
+        const certHash = Buffer.from(certID + studentName).toString('hex'); 
+        const issueDate = '2026-01-02';
 
-        // هذا هو الجزء الذي كان يسبب الخطأ في الصورة
         const request = {
-            contractId: 'basic', // تأكد أن هذا هو اسم الـ Chaincode المسجل في الشبكة
-            contractFunction: 'CreateCertificate', // تأكد من مطابقة اسم الدالة في Go
-            contractArguments: [certId, owner, issuer, issueDate, certHash],
+            contractId: 'basic', // تأكد أن هذا الاسم يطابق اسم العقد في ملف التكوين
+            contractFunction: 'IssueCertificate', // اسم الدالة الجديدة في Go
+            contractArguments: [
+                certID,       // ID
+                studentName,  // studentName
+                degree,       // degree
+                issuer,       // issuer
+                certHash,     // certHash
+                issueDate     // issueDate
+            ],
             readOnly: false
         };
 
