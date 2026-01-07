@@ -1,38 +1,50 @@
 test:
-  name: baseline-comparison-benchmark
-  description: "محاكاة إعدادات الوضع الطبيعي لورقة العمل (Baseline)"
+  name: certificate-benchmark-test
+  description: Test issuing, verifying, and revoking certificates.
   workers:
-    number: 2 # ورقة العمل استخدمت حملاً منخفضاً في البداية
+    type: local
+    number: 2
   rounds:
-    # الجولة الأولى: إصدار الشهادات
-    - label: issueCertificate
-      description: "إصدار 300 شهادة بمعدل 10 في الثانية"
-      txNumber: 300 # الرقم المستهدف من ورقة العمل
+    # 1. جولة إصدار الشهادات
+    - label: Issue Certificates
+      description: Issuing new digital certificates (using IssueCertificate).
+      txNumber: 20
       rateControl:
-        type: fixed-rate
+        type: fixed-load
         opts:
-          tps: 10 # معدل الإرسال المطلوب
+          transactionLoad: 2
       workload:
         module: workload/issueCertificate.js
 
-    # الجولة الثانية: التحقق من الشهادات
-    - label: verifyCertificate
-      description: "التحقق من 300 شهادة بمعدل 10 في الثانية"
-      txNumber: 300
+    # 2. جولة التحقق من الشهادات
+    - label: Verify a Certificate
+      description: Verifying certificate authenticity and hash (using VerifyCertificate).
+      txNumber: 20
       rateControl:
-        type: fixed-rate
+        type: fixed-load
         opts:
-          tps: 10
+          transactionLoad: 2
       workload:
         module: workload/verifyCertificate.js
 
-    # الجولة الثالثة: الاستعلام (Query)
-    - label: queryAllCertificates
-      description: "الاستعلام عن الشهادات لمحاكاة الـ Baseline"
-      txNumber: 300
+    # 3. جولة الاستعلام الشامل
+    - label: Query All Certificates
+      description: Browsing all stored certificates on the ledger (using QueryAllCertificates).
+      txNumber: 5
       rateControl:
-        type: fixed-rate
+        type: fixed-load
         opts:
-          tps: 10
+          transactionLoad: 1
       workload:
         module: workload/queryAllCertificates.js
+
+    # 4. جولة إلغاء الشهادات
+    - label: Revoke Certificate
+      description: Revoking existing certificates to mark them as invalid (using RevokeCertificate).
+      txNumber: 5
+      rateControl:
+        type: fixed-load
+        opts:
+          transactionLoad: 1
+      workload:
+        module: workload/revokeCertificate.js
