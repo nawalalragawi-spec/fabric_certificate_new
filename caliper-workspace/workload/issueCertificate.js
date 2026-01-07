@@ -6,55 +6,32 @@ const crypto = require('crypto');
 class IssueCertificateWorkload extends WorkloadModuleBase {
     constructor() {
         super();
-        this.workerIndex = -1;
-        this.totalWorkers = -1;
     }
 
-    /**
-    * تهيئة المتغيرات الأساسية للمختبر (Worker)
-    */
     async initializeWorkloadModule(workerIndex, totalWorkers, numberProtocols, workloadContext) {
-        this.workerIndex = workerIndex;
-        this.totalWorkers = totalWorkers;
+        await super.initializeWorkloadModule(workerIndex, totalWorkers, numberProtocols, workloadContext);
     }
 
-    /**
-    * الدالة الأساسية التي تنفذ المعاملة (إصدار شهادة)
-    */
     async submitTransaction() {
-        // 1. توليد معرف فريد للشهادة بناءً على وقت التنفيذ ورقم العامل
-        const certId = `Cert_${this.workerIndex}_${Date.now()}`;
-        
-        // 2. محاكاة بيانات الشهادة
+        const certId = `Cert_${this.workerIndex}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
         const owner = 'Student_' + Math.floor(Math.random() * 1000);
         const issuer = 'University_Authority';
         const issueDate = new Date().toISOString();
-        
-        // 3. توليد بصمة SHA-256 عشوائية (لمحاكاة بصمة ملف PDF)
         const randomContent = crypto.randomBytes(20).toString('hex');
         const certHash = crypto.createHash('sha256').update(randomContent).digest('hex');
 
-        // 4. إعداد الوسائط (Arguments) لإرسالها للعقد الذكي (Go)
-        // الترتيب يجب أن يطابق تعريف الدالة في Go: 
-        // IssueCertificate(ctx, id, owner, issuer, issueDate, certHash)
-        const requestSettings = {
+        // هذا هو الجزء الذي كان يسبب الخطأ في الصورة
+        const request = {
             contractId: 'basic', // تأكد أن هذا هو اسم الـ Chaincode المسجل في الشبكة
-            contractFunction: 'IssueCertificate',
+            contractFunction: 'CreateCertificate', // تأكد من مطابقة اسم الدالة في Go
             contractArguments: [certId, owner, issuer, issueDate, certHash],
             readOnly: false
         };
 
-        await this.sutAdapter.sendRequests(requestSettings);
-    }
-
-    async cleanupWorkloadModule() {
-        // دالة تنظيف إذا لزم الأمر بعد انتهاء الاختبار
+        await this.sutAdapter.sendRequests(request);
     }
 }
 
-/**
- * تصدير الدالة ليتمكن Caliper من تشغيلها
- */
 function createWorkloadModule() {
     return new IssueCertificateWorkload();
 }
