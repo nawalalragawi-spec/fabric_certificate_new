@@ -1,50 +1,29 @@
 test:
   name: certificate-benchmark-test
-  description: Test issuing, verifying, and revoking certificates.
+  description: "محاكاة نظام SecureBlockCert - التركيز على الإصدار والتحقق بالتشفير"
   workers:
     type: local
-    number: 2
+    number: 4 # زيادة عدد العمال لمحاكاة ضغط حقيقي كما في الدراسة
+
   rounds:
-    # 1. جولة إصدار الشهادات
+    # 1. جولة إصدار الشهادات (تتضمن الآن عبء التشفير AES و HMAC)
     - label: Issue Certificates
-      description: Issuing new digital certificates (using IssueCertificate).
-      txNumber: 20
+      description: "إصدار الشهادات الرقمية مع تشفير البيانات الحساسة وتوليد التوقيع الرقمي"
+      txNumber: 100 # زيادة العدد للحصول على نتائج إحصائية دقيقة
       rateControl:
-        type: fixed-load
+        type: fixed-rate # التغيير لـ fixed-rate يقيس قدرة الشبكة الفعلية (TPS)
         opts:
-          transactionLoad: 2
+          tps: 10 # ابدأ بـ 10 معاملات في الثانية وارفعها تدريجياً
       workload:
         module: workload/issueCertificate.js
 
-    # 2. جولة التحقق من الشهادات
+    # 2. جولة التحقق من الشهادات (مطابقة البصمة الرقمية)
     - label: Verify a Certificate
-      description: Verifying certificate authenticity and hash (using VerifyCertificate).
-      txNumber: 20
+      description: "التحقق من صحة الشهادة بمطابقة الـ HMAC-SHA256 المشفر"
+      txNumber: 100
       rateControl:
-        type: fixed-load
+        type: fixed-rate
         opts:
-          transactionLoad: 2
+          tps: 20 # عادة يكون التحقق أسرع من الإصدار في الأنظمة الموزعة
       workload:
         module: workload/verifyCertificate.js
-
-    # 3. جولة الاستعلام الشامل
-    - label: Query All Certificates
-      description: Browsing all stored certificates on the ledger (using QueryAllCertificates).
-      txNumber: 5
-      rateControl:
-        type: fixed-load
-        opts:
-          transactionLoad: 1
-      workload:
-        module: workload/queryAllCertificates.js
-
-    # 4. جولة إلغاء الشهادات
-    - label: Revoke Certificate
-      description: Revoking existing certificates to mark them as invalid (using RevokeCertificate).
-      txNumber: 5
-      rateControl:
-        type: fixed-load
-        opts:
-          transactionLoad: 1
-      workload:
-        module: workload/revokeCertificate.js
