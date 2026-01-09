@@ -1,70 +1,61 @@
 #!/bin/bash
 set -e
 
-# تعريف الألوان للنصوص
+# تعريف الألوان
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-echo -e "${GREEN}🚀 Starting SecureBlockCert Project Setup (Optimized Benchmark Mode)...${NC}"
+echo -e "${GREEN}🚀 البدء في إعداد مشروع SecureBlockCert (محاكاة دراسة عمر سعد - AES)...${NC}"
 echo "=================================================="
 
-# 1. التأكد من وجود الأدوات وإعداد المسارات
-echo -e "${GREEN}📦 Step 1: Checking Fabric Binaries...${NC}"
+# 1. التأكد من وجود الأدوات (Fabric v2.5.9)
+if [ ! -d "bin" ]; then
+    echo "⬇️ Downloading Fabric binaries and Docker images..."
+    curl -sSL https://bit.ly/2ysbOFE | bash -s -- 2.5.9 1.5.7
+else
+    echo "✅ Fabric tools found."
+fi
+
 export PATH=${PWD}/bin:$PATH
 export FABRIC_CFG_PATH=${PWD}/config/
 
-if [ ! -d "bin" ]; then
-    echo "⬇️ Downloading Fabric tools..."
-    curl -sSL https://bit.ly/2ysbOFE | bash -s -- 2.5.9 1.5.7
-fi
-
-# 2. إعادة تشغيل الشبكة وتنظيف الحاويات القديمة
-echo -e "${GREEN}🌐 Step 2: Restarting Fabric Network...${NC}"
+# 2. تنظيف وإعادة تشغيل شبكة Fabric
+echo -e "${GREEN}🌐 الخطوة 1: إعادة تشغيل الشبكة...${NC}"
 cd test-network
 ./network.sh down
 ./network.sh up createChannel -c mychannel -ca
 cd ..
 
-# 3. تجهيز ونشر العقد الذكي (مع إصلاح مشاكل Go)
-echo -e "${GREEN}📜 Step 3: Preparing & Deploying Secure Chaincode...${NC}"
-
-cd asset-transfer-basic/chaincode-go
-# تنظيف الموديلات والتأكد من تحميل كافة المكتبات (بما فيها التشفير)
+# 3. تحديث مكتبات Go وتجهيز التشفير (AES)
+echo -e "${GREEN}📦 الخطوة 2: تجهيز العقد الذكي بخوارزمية AES لحماية الخصوصية...${NC}"
+pushd asset-transfer-basic/chaincode-go
+# تهيئة الموديول وعمل Vendor لضمان وجود المكتبات داخل الحاوية
 go mod tidy
-go mod vendor 
-cd ../../
+go mod vendor
+popd
 
-# نشر العقد الذكي
+# 4. نشر العقد الذكي
+echo -e "${GREEN}📜 الخطوة 3: نشر العقد الذكي (Secure Chaincode)...${NC}"
 cd test-network
 ./network.sh deployCC -ccn basic -ccp ../asset-transfer-basic/chaincode-go -ccl go
 cd ..
 
-# 4. إعداد وتشغيل Caliper
-echo -e "${GREEN}⚡ Step 4: Configuring & Running Caliper...${NC}"
+# 5. تهيئة Caliper
+echo -e "${GREEN}⚙️ الخطوة 4: تهيئة Caliper وربط النسخة المستقرة...${NC}"
 cd caliper-workspace
-
-# تثبيت المكتبات إذا لم تكن موجودة
 if [ ! -d "node_modules" ]; then
-    echo "📦 Installing Caliper dependencies..."
     npm install
-    npx caliper bind --caliper-bind-sut fabric:2.4
 fi
+# الربط بـ 2.4 هو الأفضل توافقاً مع Fabric 2.5
+npx caliper bind --caliper-bind-sut fabric:2.4
 
-# البحث عن المفتاح الخاص (خطوة حاسمة لنجاح الاتصال)
-echo "🔑 Detecting Private Key..."
+# 6. تحديث ملف إعدادات الشبكة (إصلاح التنسيق)
+echo "🔑 البحث عن المفتاح الخاص للـ Admin..."
 KEY_DIR="../test-network/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/keystore"
 PVT_KEY=$(ls $KEY_DIR/*_sk | head -n 1)
 
-if [ -z "$PVT_KEY" ]; then
-    echo -e "${RED}❌ Error: Private key not found!${NC}"
-    exit 1
-fi
-echo "✅ Found Key: $(basename $PVT_KEY)"
-
-# توليد ملف إعدادات الشبكة (بناءً على المسار الفعلي للمفتاح)
-echo "⚙️ Generating network config..."
-mkdir -p networks
+echo "⚙️ Generating Clean Network Config..."
 cat << EOF > networks/networkConfig.yaml
 name: Caliper-Fabric
 version: "2.0.0"
@@ -88,14 +79,8 @@ organizations:
       discover: true
 EOF
 
-# التأكد من وجود ملف الـ Benchmark
-if [ ! -f "benchmarks/benchConfig.yaml" ]; then
-    echo -e "${RED}❌ Error: benchmarks/benchConfig.yaml not found!${NC}"
-    exit 1
-fi
-
-# تشغيل الاختبار
-echo "🔥 Running Benchmarks..."
+# 7. تنفيذ الاختبار المطور (AES + HMAC)
+echo -e "${GREEN}🚀 تشغيل اختبار Caliper (Issue & Verify)...${NC}"
 npx caliper launch manager \
     --caliper-workspace . \
     --caliper-networkconfig networks/networkConfig.yaml \
@@ -103,5 +88,6 @@ npx caliper launch manager \
     --caliper-flow-only-test
 
 echo -e "${GREEN}==================================================${NC}"
-echo -e "${GREEN}🎉 Benchmark Finished Successfully!${NC}"
-echo -e "${GREEN}📄 Check report: caliper-workspace/report.html${NC}"
+echo -e "${GREEN}🎉 تم الانتهاء بنجاح!${NC}"
+echo -e "${GREEN}📄 التقرير متوفر في: caliper-workspace/report.html${NC}"
+echo -e "${GREEN}💡 قارن Latency في جولة Verify لتلاحظ تأثير الأمان المضاف.${NC}"
