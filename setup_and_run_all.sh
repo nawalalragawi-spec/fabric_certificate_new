@@ -48,7 +48,7 @@ if [ ! -d "node_modules" ]; then
     npm install
 fi
 # الربط بـ 2.4 هو الأفضل توافقاً مع Fabric 2.5
-npx caliper bind --caliper-bind-sut fabric:2.4
+npx caliper bind --caliper-bind-sut fabric:2.2
 
 # 6. تحديث ملف إعدادات الشبكة (إصلاح التنسيق)
 echo "🔑 البحث عن المفتاح الخاص للـ Admin..."
