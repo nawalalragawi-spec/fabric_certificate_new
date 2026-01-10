@@ -1,53 +1,44 @@
 'use strict';
 
 const { WorkloadModuleBase } = require('@hyperledger/caliper-core');
-const crypto = require('crypto'); // مكتبة التشفير المدمجة في Node.js
 
 class IssueCertificateWorkload extends WorkloadModuleBase {
-    constructor() {
-        super();
-        this.txIndex = 0;
-    }
+    constructor() {
+        super();
+        this.txIndex = 0;
+    }
 
-    async submitTransaction() {
-        this.txIndex++;
-        
-        // 1. إنشاء بيانات فريدة
-        const certID = `CERT_${this.workerIndex}_${this.txIndex}`;
-        const studentName = `Student_${this.workerIndex}_${this.txIndex}`;
-        
-        // 2. محاكاة التشفير (EdDSA/AES) كما في دراسة عمر سعد
-        // نقوم بإنشاء Hash معقد يمثل التوقيع الرقمي للشهادة
-        const signature = crypto.createHmac('sha256', 'secret-key')
-                               .update(certID + studentName)
-                               .digest('hex');
+    async submitTransaction() {
+        this.txIndex++;
+        
+        // 1. إنشاء بيانات فريدة لكل معاملة
+        const certID = `CERT_${this.workerIndex}_${this.txIndex}`;
+        const studentName = `Student_Name_${this.workerIndex}_${this.txIndex}`;
+        const degree = 'Bachelor of Science in Information Technology';
+        const issuer = 'Universiti Utara Malaysia (UUM)'; 
+        const issueDate = new Date().toISOString();
 
-        // 3. زيادة حجم البيانات (Payload) لمحاكاة شهادة كاملة
-        const degree = 'Bachelor of Science in Information Technology';
-        const issuer = 'Universiti Utara Malaysia (UUM)'; // محاكاة لجهة الإصدار في الدراسة
-        const certHash = signature; // استخدام التوقيع كـ Hash للشهادة
-        const issueDate = new Date().toISOString();
+        // 2. إعداد الطلب ليتوافق تماماً مع وسائط العقد الذكي الجديد
+        // الترتيب: [id, studentName, degree, issueDate, issuer]
+        const request = {
+            contractId: 'basic', 
+            contractFunction: 'IssueCertificate', 
+            contractArguments: [
+                certID,       
+                studentName,  // العقد سيقوم بتشفير هذا الحقل بـ AES-256 داخلياً
+                degree,       
+                issueDate,    
+                issuer        
+            ],
+            readOnly: false
+        };
 
-        const request = {
-            contractId: 'basic', 
-            contractFunction: 'IssueCertificate', 
-            contractArguments: [
-                certID,       
-                studentName,  
-                degree,       
-                issuer,       
-                certHash,     
-                issueDate     
-            ],
-            readOnly: false
-        };
-
-        await this.sutAdapter.sendRequests(request);
-    }
+        await this.sutAdapter.sendRequests(request);
+    }
 }
 
 function createWorkloadModule() {
-    return new IssueCertificateWorkload();
+    return new IssueCertificateWorkload();
 }
 
-module.exports.createWorkloadModule = createWorkloadModule; 
+module.exports.createWorkloadModule = createWorkloadModule;
