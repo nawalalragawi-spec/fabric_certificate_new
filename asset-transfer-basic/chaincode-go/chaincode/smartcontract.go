@@ -155,4 +155,4 @@ func (s *SmartContract) CertificateExists(ctx contractapi.TransactionContextInte
 		return false, err
 	}
 	return certJSON != nil, nil
-} هل الكود صحيح
+} 
