@@ -11,22 +11,15 @@ class VerifyCertificateWorkload extends WorkloadModuleBase {
     async submitTransaction() {
         this.txIndex++;
         
-        // يجب أن يتطابق نمط المعرف مع ما تم إصداره في ملف issueCertificate.js
+        // يجب أن يتطابق المعرف مع ما تم إصداره لضمان وجود السجل
         const certID = `CERT_${this.workerIndex}_${this.txIndex}`;
-        const studentName = `Student_${this.workerIndex}_${this.txIndex}`;
-        
-        // إعادة توليد نفس الـ Hash الذي استخدمناه عند الإصدار لمحاكاة عملية تحقق ناجحة
-        const certHash = Buffer.from(certID + studentName).toString('hex');
 
         const request = {
             contractId: 'basic',
-            // استدعاء دالة التحقق الذكية التي كتبناها في Go
-            contractFunction: 'VerifyCertificate', 
-            contractArguments: [
-                certID, 
-                certHash
-            ],
-            readOnly: true // التحقق هو عملية قراءة ولا يغير في حالة البلوكشين
+            // استدعاء دالة القراءة التي تتضمن فك التشفير (AES Decrypt)
+            contractFunction: 'ReadCertificate', 
+            contractArguments: [certID],
+            readOnly: true // عملية قراءة فقط (Query)
         };
 
         await this.sutAdapter.sendRequests(request);
