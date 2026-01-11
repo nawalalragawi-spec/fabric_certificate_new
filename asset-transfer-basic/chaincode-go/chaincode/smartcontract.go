@@ -22,14 +22,12 @@ type SmartContract struct {
 var encryptionKey = []byte("asupersecretkeythatis32byteslong")
 
 // Certificate: هيكل الشهادة الأكاديمية
-type Certificate struct {
-	ID          string `json:"ID"`
-	StudentName string `json:"StudentName"` // سيخزن كنص مشفر Base64
-	Degree      string `json:"Degree"`
-	IssueDate   string `json:"IssueDate"`
-	Issuer      string `json:"Issuer"`
-}
-
+ype Certificate struct {
+    ID          string `json:"ID"`
+    StudentName string `json:"StudentName"`
+    Degree      string `json:"Degree"`
+    IssueDate   string `json:"IssueDate"`
+    Issuer      string `json:"Issuer"`}
 // =========================================================================================
 // وظائف التشفير المساعدة (AES-256 GCM)
 // =========================================================================================
