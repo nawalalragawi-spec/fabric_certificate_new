@@ -27,7 +27,8 @@ ype Certificate struct {
     StudentName string `json:"StudentName"`
     Degree      string `json:"Degree"`
     IssueDate   string `json:"IssueDate"`
-    Issuer      string `json:"Issuer"`}
+    Issuer      string `json:"Issuer"` 
+}
 // =========================================================================================
 // وظائف التشفير المساعدة (AES-256 GCM)
 // =========================================================================================
@@ -105,11 +106,11 @@ func (s *SmartContract) IssueCertificate(ctx contractapi.TransactionContextInter
 	}
 
 	cert := Certificate{
-		ID:          id,
+		ID: id,
 		StudentName: encryptedName,
-		Degree:      degree,
-		IssueDate:   issueDate,
-		Issuer:      issuer,
+		Degree: degree,
+		IssueDate: issueDate,
+		Issuer: issuer,
 	}
 
 	certJSON, err := json.Marshal(cert)
