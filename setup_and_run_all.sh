@@ -6,40 +6,36 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-echo -e "${GREEN}🚀 البدء في إعداد مشروع SecureBlockCert (محاكاة دراسة عمر سعد - AES)...${NC}"
+echo -e "${GREEN}🚀 البدء في إصلاح وتشغيل مشروع SecureBlockCert...${NC}"
 echo "=================================================="
 
-# 1. التأكد من وجود الأدوات
+# 1. إعداد أدوات Fabric
 if [ ! -d "bin" ]; then
     echo "⬇️ Downloading Fabric binaries..."
     curl -sSL https://bit.ly/2ysbOFE | bash -s -- 2.5.9 1.5.7
-else
-    echo "✅ Fabric tools found."
 fi
-
 export PATH=${PWD}/bin:$PATH
 export FABRIC_CFG_PATH=${PWD}/config/
 
-# 2. إعادة تشغيل الشبكة
+# 2. إعادة تشغيل الشبكة (تنظيف كامل)
 echo -e "${GREEN}🌐 الخطوة 1: إعادة تشغيل الشبكة...${NC}"
 cd test-network
 ./network.sh down
 ./network.sh up createChannel -c mychannel -ca
 cd ..
 
-# 3. تجهيز العقد الذكي (هنا تم دمج الكود والإصلاحات)
-echo -e "${GREEN}📦 الخطوة 2: كتابة العقد الذكي (AES) وتنظيف المجلدات...${NC}"
+# ---------------------------------------------------------
+# 3. إصلاح العقد الذكي (Go Chaincode Fix)
+# ---------------------------------------------------------
+echo -e "${GREEN}📦 الخطوة 2: إصلاح العقد الذكي (إنشاء main.go)...${NC}"
 pushd asset-transfer-basic/chaincode-go
 
-# --- [بداية الإصلاحات المدمجة] ---
+# تنظيف الملفات القديمة والمتعارضة
+rm -rf chaincode       # حذف المجلد الفرعي إن وجد
+rm -f assetTransfer.go # حذف الملف القديم
+rm -f main.go          # حذف الملف الحالي لإعادة كتابته بشكل نظيف
 
-# أ) حذف الملفات والمجلدات المتعارضة
-echo "🗑️ تنظيف الملفات القديمة (chaincode folder, assetTransfer.go)..."
-rm -rf chaincode       # حذف المجلد الفرعي المسبب للمشكلة
-rm -f assetTransfer.go # حذف الملف القديم إن وجد
-
-# ب) كتابة ملف main.go الجديد مباشرة من هنا
-echo "✍️ كتابة كود main.go الجديد (AES Encryption)..."
+# كتابة كود main.go الصحيح (AES Encryption)
 cat << 'EOF' > main.go
 package main
 
@@ -56,7 +52,6 @@ import (
 	"github.com/hyperledger/fabric-contract-api-go/v2/contractapi"
 )
 
-// SmartContract defines the structure for our chaincode
 type SmartContract struct {
 	contractapi.Contract
 }
@@ -137,17 +132,14 @@ func encrypt(plaintext []byte, key []byte) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
 		return "", err
 	}
-
 	nonce := make([]byte, gcm.NonceSize())
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		return "", err
 	}
-
 	ciphertext := gcm.Seal(nonce, nonce, plaintext, nil)
 	return base64.StdEncoding.EncodeToString(ciphertext), nil
 }
@@ -157,28 +149,23 @@ func decrypt(cryptoText string, key []byte) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return "", err
 	}
-
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
 		return "", err
 	}
-
 	nonceSize := gcm.NonceSize()
 	if len(data) < nonceSize {
 		return "", fmt.Errorf("ciphertext too short")
 	}
-
 	nonce, ciphertext := data[:nonceSize], data[nonceSize:]
 	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
 		return "", err
 	}
-
 	return string(plaintext), nil
 }
 
@@ -187,47 +174,87 @@ func main() {
 	if err != nil {
 		log.Panicf("Error creating chaincode: %v", err)
 	}
-
 	if err := chaincode.Start(); err != nil {
 		log.Panicf("Error starting chaincode: %v", err)
 	}
 }
 EOF
 
-# ج) تحديث المكتبات
-echo "🔄 تحديث المكتبات (go mod tidy & vendor)..."
+# تحديث المكتبات
+echo "🔄 تحديث المكتبات..."
 rm -f go.sum
 rm -rf vendor
 go mod tidy
 go mod vendor
-
-# --- [نهاية الإصلاحات] ---
 popd
 
+# ---------------------------------------------------------
 # 4. نشر العقد الذكي
+# ---------------------------------------------------------
 echo -e "${GREEN}📜 الخطوة 3: نشر العقد الذكي...${NC}"
 cd test-network
 ./network.sh deployCC -ccn basic -ccp ../asset-transfer-basic/chaincode-go -ccl go
 cd ..
 
-# 5. تهيئة Caliper
-echo -e "${GREEN}⚙️ الخطوة 4: تهيئة Caliper...${NC}"
+# ---------------------------------------------------------
+# 5. إصلاح ملف Caliper Workload (JS)
+# ---------------------------------------------------------
+echo -e "${GREEN}⚙️ الخطوة 4: إصلاح ملفات Caliper (JS)...${NC}"
 cd caliper-workspace
+
+# كتابة ملف issueCertificate.js بشكل صحيح
+cat << 'EOF' > workload/issueCertificate.js
+'use strict';
+const { WorkloadModuleBase } = require('@hyperledger/caliper-core');
+
+class IssueCertificateWorkload extends WorkloadModuleBase {
+    constructor() {
+        super();
+        this.txIndex = 0;
+    }
+
+    async submitTransaction() {
+        this.txIndex++;
+        // 1. إنشاء بيانات فريدة
+        const certID = `CERT_${this.workerIndex}_${this.txIndex}`;
+        const studentName = `Student_${this.workerIndex}_${this.txIndex}`;
+        const degree = 'PhD in Blockchain';
+        const issuer = 'UUM University'; 
+        const issueDate = new Date().toISOString();
+
+        // 2. إعداد الطلب
+        const request = {
+            contractId: 'basic', 
+            contractFunction: 'IssueCertificate', 
+            contractArguments: [certID, studentName, degree, issueDate, issuer],
+            readOnly: false
+        };
+
+        await this.sutAdapter.sendRequests(request);
+    }
+}
+
+function createWorkloadModule() {
+    return new IssueCertificateWorkload();
+}
+
+module.exports.createWorkloadModule = createWorkloadModule;
+EOF
+
+# تثبيت الاعتماديات إذا لزم الأمر
 if [ ! -d "node_modules" ]; then
     npm install
 fi
 npx caliper bind --caliper-bind-sut fabric:2.2
 
-# 6. إعداد ملف الشبكة للمفاتيح
-echo "🔑 تحديث مفاتيح Admin..."
+# ---------------------------------------------------------
+# 6. إعداد مفاتيح الشبكة (YAML Fix)
+# ---------------------------------------------------------
+echo "🔑 تحديث المفاتيح والملفات..."
 KEY_DIR="../test-network/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/keystore"
 PVT_KEY=$(ls $KEY_DIR/*_sk | head -n 1)
 
-if [ -z "$PVT_KEY" ]; then
-    echo -e "${RED}❌ خطأ: لم يتم العثور على المفتاح الخاص!${NC}"
-    exit 1
-fi
-
+# كتابة ملف YAML مع مراعاة المسافات بدقة شديدة
 cat << EOF > networks/networkConfig.yaml
 name: Caliper-Fabric
 version: "2.0.0"
@@ -251,13 +278,11 @@ organizations:
       discover: true
 EOF
 
-# 7. التشغيل النهائي
-echo -e "${GREEN}🚀 تشغيل اختبار Caliper...${NC}"
+echo -e "${GREEN}🚀 تشغيل اختبار Caliper النهائي...${NC}"
 npx caliper launch manager \
     --caliper-workspace . \
     --caliper-networkconfig networks/networkConfig.yaml \
     --caliper-benchconfig benchmarks/benchConfig.yaml \
     --caliper-flow-only-test
 
-echo -e "${GREEN}==================================================${NC}"
-echo -e "${GREEN}🎉 تم الانتهاء بنجاح! التقرير جاهز.${NC}"
+echo -e "${GREEN}🎉 تم الإصلاح والتشغيل بنجاح!${NC}"
