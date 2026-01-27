@@ -1,8 +1,12 @@
 package chaincode
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/hyperledger/fabric-contract-api-go/v2/contractapi"
 )
@@ -13,40 +17,50 @@ type SmartContract struct {
 }
 
 // Certificate describes the details of a digital certificate
-// تم ترتيب الحقول أبجدياً لضمان التوافق (Determinism) عند التحويل لـ JSON
 type Certificate struct {
-	CertHash   string `json:"CertHash"`   // بصمة SHA-256 للملف الأصلي
-	ID         string `json:"ID"`         // الرقم التسلسلي الفريد للشهادة
-	IssueDate  string `json:"IssueDate"`  // تاريخ الإصدار
-	Issuer     string `json:"Issuer"`     // الجهة المصدرة (مثلاً الجامعة)
-	Owner      string `json:"Owner"`      // اسم صاحب الشهادة
+	CertHash   string `json:"CertHash"`   // ستخزن هنا البيانات المشفرة (AES Ciphertext)
+	ID         string `json:"ID"`         
+	IssueDate  string `json:"IssueDate"`  
+	Issuer     string `json:"Issuer"`     
+	Owner      string `json:"Owner"`      
 }
 
-// InitLedger adds a base set of certificates to the ledger (اختياري للتهيئة)
-func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) error {
-	certificates := []Certificate{
-		{ID: "cert1", Owner: "Ahmed", Issuer: "University A", IssueDate: "2023-01-01", CertHash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"},
-		{ID: "cert2", Owner: "Sara", Issuer: "University B", IssueDate: "2023-02-15", CertHash: "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"},
+// مفتاح AES ثابت (يجب أن يتكون من 32 رمزاً لـ AES-256) ويطابق الموجود في ملفات Caliper
+const AES_KEY = "12345678901234567890123456789012"
+
+// دالة مساعدة لفك التشفير باستخدام AES-GCM
+func decrypt(encryptedData string) (string, error) {
+	parts := strings.Split(encryptedData, ":")
+	if len(parts) != 3 {
+		return "", fmt.Errorf("invalid encrypted data format")
 	}
 
-	for _, cert := range certificates {
-		certBytes, err := json.Marshal(cert)
-		if err != nil {
-			return err
-		}
+	iv, _ := hex.DecodeString(parts[0])
+	ciphertext, _ := hex.DecodeString(parts[1])
+	authTag, _ := hex.DecodeString(parts[2])
 
-		err = ctx.GetStub().PutState(cert.ID, certBytes)
-		if err != nil {
-			return fmt.Errorf("failed to put to world state. %v", err)
-		}
+	block, err := aes.NewCipher([]byte(AES_KEY))
+	if err != nil {
+		return "", err
 	}
 
-	return nil
+	aesgcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", err
+	}
+
+	// دمج ciphertext مع authTag لأن مكتبة Go تتوقعهما معاً
+	fullCiphertext := append(ciphertext, authTag...)
+	plaintext, err := aesgcm.Open(nil, iv, fullCiphertext, nil)
+	if err != nil {
+		return "", err
+	}
+
+	return string(plaintext), nil
 }
 
-// IssueCertificate creates a new certificate and stores it in the ledger
-// هذه الدالة هي المسؤولة عن "حماية" الشهادة عبر تخزين بصمتها الرقمية
-func (s *SmartContract) IssueCertificate(ctx contractapi.TransactionContextInterface, id string, owner string, issuer string, issueDate string, certHash string) error {
+// IssueCertificate تخزن الشهادة (الهاش يصل مشفراً من طرف العميل)
+func (s *SmartContract) IssueCertificate(ctx contractapi.TransactionContextInterface, id string, owner string, issuer string, issueDate string, encryptedHash string) error {
 	exists, err := s.CertificateExists(ctx, id)
 	if err != nil {
 		return err
@@ -56,13 +70,13 @@ func (s *SmartContract) IssueCertificate(ctx contractapi.TransactionContextInter
 	}
 
 	certificate := Certificate{
-		ID:        id,
-		Owner:     owner,
-		Issuer:    issuer,
-		IssueDate: issueDate,
-		CertHash:  certHash, // البصمة الناتجة عن SHA-256
+		ID:         id,
+		Owner:      owner,
+		Issuer:     issuer,
+		IssueDate:  issueDate,
+		CertHash:   encryptedHash, // يتم التخزين وهو مشفر
 	}
-	
+
 	certBytes, err := json.Marshal(certificate)
 	if err != nil {
 		return err
@@ -71,20 +85,25 @@ func (s *SmartContract) IssueCertificate(ctx contractapi.TransactionContextInter
 	return ctx.GetStub().PutState(id, certBytes)
 }
 
-// VerifyCertificate compares a provided hash with the stored hash for a certificate
-// الدالة الأساسية لكشف التزوير
+// VerifyCertificate تفك تشفير الهاش المخزن وتقارنه بالهاش المدخل
 func (s *SmartContract) VerifyCertificate(ctx contractapi.TransactionContextInterface, id string, currentHash string) (bool, error) {
 	certificate, err := s.ReadCertificate(ctx, id)
 	if err != nil {
 		return false, err
 	}
 
-	// مقارنة البصمة المدخلة مع البصمة المخزنة في البلوكشين
-	isValid := certificate.CertHash == currentHash
+	// فك التشفير عن البيانات المخزنة
+	decryptedStoredHash, err := decrypt(certificate.CertHash)
+	if err != nil {
+		return false, fmt.Errorf("failed to decrypt stored hash: %v", err)
+	}
+
+	// مقارنة الهاش الصريح (Plaintext) مع الهاش المقدم للتحقق
+	isValid := decryptedStoredHash == currentHash
 	return isValid, nil
 }
 
-// ReadCertificate returns the certificate stored in the world state with given id
+// ReadCertificate لاسترجاع الشهادة كما هي (مشفرة)
 func (s *SmartContract) ReadCertificate(ctx contractapi.TransactionContextInterface, id string) (*Certificate, error) {
 	certBytes, err := ctx.GetStub().GetState(id)
 	if err != nil {
@@ -103,7 +122,16 @@ func (s *SmartContract) ReadCertificate(ctx contractapi.TransactionContextInterf
 	return &certificate, nil
 }
 
-// RevokeCertificate deletes a certificate from the ledger
+// CertificateExists للتحقق من وجود المعرف
+func (s *SmartContract) CertificateExists(ctx contractapi.TransactionContextInterface, id string) (bool, error) {
+	certBytes, err := ctx.GetStub().GetState(id)
+	if err != nil {
+		return false, fmt.Errorf("failed to read from world state: %v", err)
+	}
+	return certBytes != nil, nil
+}
+
+// RevokeCertificate لحذف الشهادة
 func (s *SmartContract) RevokeCertificate(ctx contractapi.TransactionContextInterface, id string) error {
 	exists, err := s.CertificateExists(ctx, id)
 	if err != nil {
@@ -112,23 +140,11 @@ func (s *SmartContract) RevokeCertificate(ctx contractapi.TransactionContextInte
 	if !exists {
 		return fmt.Errorf("the certificate %s does not exist", id)
 	}
-
 	return ctx.GetStub().DelState(id)
 }
 
-// CertificateExists returns true when certificate with given ID exists in world state
-func (s *SmartContract) CertificateExists(ctx contractapi.TransactionContextInterface, id string) (bool, error) {
-	certBytes, err := ctx.GetStub().GetState(id)
-	if err != nil {
-		return false, fmt.Errorf("failed to read from world state: %v", err)
-	}
-
-	return certBytes != nil, nil
-}
-
-// GetAllCertificates returns all certificates found in world state
+// GetAllCertificates لاسترجاع قائمة بكافة الشهادات
 func (s *SmartContract) GetAllCertificates(ctx contractapi.TransactionContextInterface) ([]*Certificate, error) {
-	// range query with empty string for startKey and endKey does an open-ended query of all assets in the chaincode namespace.
 	resultsIterator, err := ctx.GetStub().GetStateByRange("", "")
 	if err != nil {
 		return nil, err
@@ -149,6 +165,5 @@ func (s *SmartContract) GetAllCertificates(ctx contractapi.TransactionContextInt
 		}
 		certificates = append(certificates, &certificate)
 	}
-
 	return certificates, nil
 }
