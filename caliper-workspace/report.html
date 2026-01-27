@@ -155,16 +155,16 @@
                     </tr>
 
                     <tr>
-                         <td>Issue Certificates</td> <td>20</td> <td>0</td> <td>4.3</td> <td>2.04</td> <td>0.04</td> <td>1.36</td> <td>3.0</td>
+                         <td>Issue Certificates</td> <td>30</td> <td>0</td> <td>2.5</td> <td>2.27</td> <td>0.04</td> <td>1.48</td> <td>2.1</td>
                     </tr>
                     <tr>
-                         <td>Verify a Certificate</td> <td>20</td> <td>0</td> <td>40.1</td> <td>0.02</td> <td>0.00</td> <td>0.01</td> <td>39.8</td>
+                         <td>Verify a Certificate</td> <td>0</td> <td>30</td> <td>63.3</td> <td>-</td> <td>-</td> <td>-</td> <td>62.9</td>
                     </tr>
                     <tr>
-                         <td>Query All Certificates</td> <td>4</td> <td>0</td> <td>9.9</td> <td>0.01</td> <td>0.01</td> <td>0.01</td> <td>9.7</td>
+                         <td>Query All Certificates</td> <td>0</td> <td>10</td> <td>23.0</td> <td>-</td> <td>-</td> <td>-</td> <td>22.8</td>
                     </tr>
                     <tr>
-                         <td>Revoke Certificate</td> <td>20</td> <td>0</td> <td>4.3</td> <td>2.04</td> <td>0.05</td> <td>1.36</td> <td>3.0</td>
+                         <td>Revoke Certificate</td> <td>0</td> <td>30</td> <td>58.8</td> <td>-</td> <td>-</td> <td>-</td> <td>57.9</td>
                     </tr>
                 </table>
             </div>
@@ -182,7 +182,7 @@
                                      <th>Name</th> <th>Succ</th> <th>Fail</th> <th>Send Rate (TPS)</th> <th>Max Latency (s)</th> <th>Min Latency (s)</th> <th>Avg Latency (s)</th> <th>Throughput (TPS)</th>
                                 </tr>
                                 <tr>
-                                     <td>Issue Certificates</td> <td>20</td> <td>0</td> <td>4.3</td> <td>2.04</td> <td>0.04</td> <td>1.36</td> <td>3.0</td>
+                                     <td>Issue Certificates</td> <td>30</td> <td>0</td> <td>2.5</td> <td>2.27</td> <td>0.04</td> <td>1.48</td> <td>2.1</td>
                                 </tr>
                             </table>
                         <h3>Resource utilization for Issue Certificates</h3>
@@ -202,7 +202,7 @@
                                      <th>Name</th> <th>Succ</th> <th>Fail</th> <th>Send Rate (TPS)</th> <th>Max Latency (s)</th> <th>Min Latency (s)</th> <th>Avg Latency (s)</th> <th>Throughput (TPS)</th>
                                 </tr>
                                 <tr>
-                                     <td>Verify a Certificate</td> <td>20</td> <td>0</td> <td>40.1</td> <td>0.02</td> <td>0.00</td> <td>0.01</td> <td>39.8</td>
+                                     <td>Verify a Certificate</td> <td>0</td> <td>30</td> <td>63.3</td> <td>-</td> <td>-</td> <td>-</td> <td>62.9</td>
                                 </tr>
                             </table>
                         <h3>Resource utilization for Verify a Certificate</h3>
@@ -222,7 +222,7 @@
                                      <th>Name</th> <th>Succ</th> <th>Fail</th> <th>Send Rate (TPS)</th> <th>Max Latency (s)</th> <th>Min Latency (s)</th> <th>Avg Latency (s)</th> <th>Throughput (TPS)</th>
                                 </tr>
                                 <tr>
-                                     <td>Query All Certificates</td> <td>4</td> <td>0</td> <td>9.9</td> <td>0.01</td> <td>0.01</td> <td>0.01</td> <td>9.7</td>
+                                     <td>Query All Certificates</td> <td>0</td> <td>10</td> <td>23.0</td> <td>-</td> <td>-</td> <td>-</td> <td>22.8</td>
                                 </tr>
                             </table>
                         <h3>Resource utilization for Query All Certificates</h3>
@@ -242,7 +242,7 @@
                                      <th>Name</th> <th>Succ</th> <th>Fail</th> <th>Send Rate (TPS)</th> <th>Max Latency (s)</th> <th>Min Latency (s)</th> <th>Avg Latency (s)</th> <th>Throughput (TPS)</th>
                                 </tr>
                                 <tr>
-                                     <td>Revoke Certificate</td> <td>20</td> <td>0</td> <td>4.3</td> <td>2.04</td> <td>0.05</td> <td>1.36</td> <td>3.0</td>
+                                     <td>Revoke Certificate</td> <td>0</td> <td>30</td> <td>58.8</td> <td>-</td> <td>-</td> <td>-</td> <td>57.9</td>
                                 </tr>
                             </table>
                         <h3>Resource utilization for Revoke Certificate</h3>
@@ -259,7 +259,7 @@ workers:
 rounds:
   - label: Issue Certificates
     description: Issuing new certificates (using CreateAsset).
-    txNumber: 20
+    txNumber: 30
     rateControl:
       type: fixed-load
       opts:
@@ -268,7 +268,7 @@ rounds:
       module: workload&#x2F;issueCertificate.js
   - label: Verify a Certificate
     description: Verifying certificates exist (using ReadAsset).
-    txNumber: 20
+    txNumber: 30
     rateControl:
       type: fixed-load
       opts:
@@ -277,7 +277,7 @@ rounds:
       module: workload&#x2F;verifyCertificate.js
   - label: Query All Certificates
     description: Browsing all certificates (using GetAllAssets).
-    txNumber: 5
+    txNumber: 10
     rateControl:
       type: fixed-load
       opts:
@@ -286,7 +286,7 @@ rounds:
       module: workload&#x2F;queryAllCertificates.js
   - label: Revoke Certificate
     description: Revoking&#x2F;Deleting certificates (using DeleteAsset).
-    txNumber: 20
+    txNumber: 30
     rateControl:
       type: fixed-load
       opts:

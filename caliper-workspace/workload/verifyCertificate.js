@@ -10,13 +10,18 @@ class VerifyCertificateWorkload extends WorkloadModuleBase {
 
     async submitTransaction() {
         this.txIndex++;
-        // نبحث عن نفس الشهادة التي أصدرناها في الخطوة السابقة
+        // استخدام نفس نمط المعرف المستخدم في عملية الإصدار
         const certID = `cert_${this.workerIndex}_${this.txIndex}`;
 
         const request = {
             contractId: 'basic',
-            contractFunction: 'ReadAsset',
-            contractArguments: [certID],
+            // التعديل 1: تغيير اسم الدالة إلى VerifyCertificate الموجودة في Go
+            contractFunction: 'VerifyCertificate', 
+            // التعديل 2: الدالة تتوقع وسيطين (ID و Hash) حسب العقد الذكي
+            contractArguments: [
+                certID, 
+                'dummy_hash_for_now' // يجب أن يطابق الهاش المستخدم عند الإصدار
+            ],
             readOnly: true
         };
 

@@ -10,7 +10,8 @@ class QueryAllWorkload extends WorkloadModuleBase {
     async submitTransaction() {
         const request = {
             contractId: 'basic',
-            contractFunction: 'GetAllAssets',
+            // التعديل: تم تغيير اسم الدالة لتطابق الموجود في عقد Go الذكي
+            contractFunction: 'GetAllCertificates', 
             contractArguments: [],
             readOnly: true
         };

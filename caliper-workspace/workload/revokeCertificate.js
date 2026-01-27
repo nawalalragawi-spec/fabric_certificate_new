@@ -10,12 +10,14 @@ class RevokeCertificateWorkload extends WorkloadModuleBase {
 
     async submitTransaction() {
         this.txIndex++;
-        // نحذف نفس الشهادة التي تم إنشاؤها
+        // نحذف نفس المعرف الذي تم استخدامه في مرحلة الإصدار لضمان وجوده
         const certID = `cert_${this.workerIndex}_${this.txIndex}`;
 
         const request = {
             contractId: 'basic',
-            contractFunction: 'DeleteAsset',
+            // التعديل: تم تغيير اسم الدالة لتطابق الموجود في عقد Go (RevokeCertificate)
+            contractFunction: 'RevokeCertificate', 
+            // الدالة تتوقع وسيطاً واحداً فقط وهو المعرف (id)
             contractArguments: [certID],
             readOnly: false
         };
