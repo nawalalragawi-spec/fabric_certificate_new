@@ -10,18 +10,22 @@ class IssueCertificateWorkload extends WorkloadModuleBase {
 
     async submitTransaction() {
         this.txIndex++;
-        // معرف موحد نستخدمه في جميع المراحل
+        
+        // إنشاء معرف فريد لكل معاملة
         const certID = `cert_${this.workerIndex}_${this.txIndex}`;
-
+        
         const request = {
-            contractId: 'basic',
-            contractFunction: 'CreateAsset',
+            // تأكد أن contractId يطابق الاسم في networkConfig.yaml (غالباً basic)
+            contractId: 'basic', 
+            // 1. تصحيح اسم الدالة لتطابق كود الـ Go
+            contractFunction: 'IssueCertificate', 
+            // 2. تصحيح الوسائط لتطابق ترتيب وأنواع كود الـ Go
             contractArguments: [
-                certID,                     // ID
-                'Student ' + this.txIndex,  // Name
-                95,                         // Grade (INT required)
-                'Blockchain 101',           // Course
-                2025                        // Year (INT required)
+                certID,                   // id
+                'Student_' + this.txIndex, // owner
+                'University_A',           // issuer
+                '2025-05-20',             // issueDate
+                'dummy_hash_for_now'      // certHash (سنضيف التشفير الفعلي لاحقاً)
             ],
             readOnly: false
         };
