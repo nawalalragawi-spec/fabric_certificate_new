@@ -1,39 +1,48 @@
-// ستحتاج لإضافة هذه الدوال المساعدة في ملف Go الخاص بك
-import (
-    "crypto/aes"
-    "crypto/cipher"
-    "encoding/hex"
-    "strings"
-)
+'use strict';
+const { WorkloadModuleBase } = require('@hyperledger/caliper-core');
+const crypto = require('crypto');
 
-const AES_KEY = "12345678901234567890123456789012" // يجب أن يطابق المفتاح في JS
+// مفتاح التشفير (يجب أن يكون 32 بايت لـ AES-256)
+const AES_KEY = Buffer.from('12345678901234567890123456789012'); // مثال ثابت للتبسيط حالياً
 
-func decrypt(encryptedData string) (string, error) {
-    parts := strings.Split(encryptedData, ":")
-    iv, _ := hex.DecodeString(parts[0])
-    ciphertext, _ := hex.DecodeString(parts[1])
-    authTag, _ := hex.DecodeString(parts[2])
+function encrypt(text) {
+    const iv = crypto.randomBytes(12); // GCM يتطلب 12 بايت IV
+    const cipher = crypto.createCipheriv('aes-256-gcm', AES_KEY, iv);
+    let encrypted = cipher.update(text, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    const authTag = cipher.getAuthTag().toString('hex');
+    // ندمج (iv + encrypted + authTag) في سلسلة واحدة لإرسالها
+    return `${iv.toString('hex')}:${encrypted}:${authTag}`;
+}
 
-    block, _ := aes.NewCipher([]byte(AES_KEY))
-    aesgcm, _ := cipher.NewGCM(block)
-
-    // دمج التشفير مع الـ tag لفكها في Go
-    fullCiphertext := append(ciphertext, authTag...)
-    plaintext, err := aesgcm.Open(nil, iv, fullCiphertext, nil)
-    if err != nil {
-        return "", err
+class IssueCertificateWorkload extends WorkloadModuleBase {
+    constructor() {
+        super();
+        this.txIndex = 0;
     }
-    return string(plaintext), nil
+    async submitTransaction() {
+        this.txIndex++;
+        const certID = `cert_${this.workerIndex}_${this.txIndex}`;
+        
+        // البيانات المراد حمايتها (الهاش الأصلي)
+        const originalHash = "sha256_of_real_certificate_data";
+        // تشفير الهاش قبل الإرسال
+        const encryptedHash = encrypt(originalHash);
+
+        const request = {
+            contractId: 'basic',
+            contractFunction: 'IssueCertificate',
+            contractArguments: [
+                certID,
+                'Student_' + this.txIndex,
+                'University_A',
+                '2025-05-20',
+                encryptedHash // نرسل الهاش مشفراً
+            ],
+            readOnly: false
+        };
+        await this.sutAdapter.sendRequests(request);
+    }
 }
-
-// ثم نعدل دالة التحقق لتستخدم فك التشفير
-func (s *SmartContract) VerifyCertificate(ctx contractapi.TransactionContextInterface, id string, providedHash string) (bool, error) {
-    certificate, err := s.ReadCertificate(ctx, id)
-    if err != nil { return false, err }
-
-    // فك تشفير الهاش المخزن قبل المقارنة
-    decryptedStoredHash, err := decrypt(certificate.CertHash)
-    if err != nil { return false, fmt.Errorf("failed to decrypt: %v", err) }
-
-    return decryptedStoredHash == providedHash, nil
-}
+function createWorkloadModule() { return new IssueCertificateWorkload(); }
+module.exports.createWorkloadModule = createWorkloadModule;
