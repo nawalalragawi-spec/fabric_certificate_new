@@ -26,7 +26,7 @@ type Certificate struct {
 }
 
 // مفتاح AES ثابت (يجب أن يتكون من 32 رمزاً لـ AES-256) ويطابق الموجود في ملفات Caliper
-const AES_KEY = "12345678901234567890123456789112"
+const AES_KEY = "12345678901234567890123456789012"
 
 // دالة مساعدة لفك التشفير باستخدام AES-GCM
 func decrypt(encryptedData string) (string, error) {
