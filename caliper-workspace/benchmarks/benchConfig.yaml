@@ -1,46 +1,46 @@
 test:
-  name: certificate-benchmark-secure
-  description: 'Performance test for encrypted certificate lifecycle (AES-256-GCM).'
+  name: certificate-benchmark-optimized
+  description: 'Performance test for encrypted AES certificate lifecycle '
   workers:
     type: local
     number: 2
   rounds:
     - label: Issue Certificates
-      description: Issuing new certificates with client-side AES encryption.
-      txNumber: 30
+      description: Issuing new certificates (50 TPS for 30 seconds).
+      txDuration: 30
       rateControl:
-        type: fixed-load
+        type: fixed-rate
         opts:
-          transactionLoad: 2
+          tps: 50
       workload:
         module: workload/issueCertificate.js
 
     - label: Verify a Certificate
-      description: Verifying encrypted certificates (Decryption & Comparison in Chaincode).
-      txNumber: 30
+      description: Verifying certificates (50 TPS for 30 seconds).
+      txDuration: 30
       rateControl:
-        type: fixed-load
+        type: fixed-rate
         opts:
-          transactionLoad: 2
+          tps: 50
       workload:
         module: workload/verifyCertificate.js
 
     - label: Query All Certificates
-      description: Browsing all encrypted certificate records.
-      txNumber: 10
+      description: Browsing certificate records (50 TPS for 30 seconds).
+      txDuration: 30
       rateControl:
-        type: fixed-load
+        type: fixed-rate
         opts:
-          transactionLoad: 1
+          tps: 50
       workload:
         module: workload/queryAllCertificates.js
 
     - label: Revoke Certificate
-      description: Revoking/Deleting encrypted certificate records.
-      txNumber: 30
+      description: Revoking certificates to test deletion performance (50 TPS for 30 seconds).
+      txDuration: 30
       rateControl:
-        type: fixed-load
+        type: fixed-rate
         opts:
-          transactionLoad: 2
+          tps: 50
       workload:
         module: workload/revokeCertificate.js
