@@ -126,8 +126,8 @@
             <ul>
                 <h3>&nbspBasic information</h3>
                 <li>DLT: &nbsp<span style="font-weight: 500;">fabric</span></li>
-                <li>Name: &nbsp<span style="font-weight: 500;">certificate-benchmark-test</span></li>
-                <li>Description: &nbsp<span style="font-weight: 500;">Test issuing, verifying, and revoking certificates.</span></li>
+                <li>Name: &nbsp<span style="font-weight: 500;">certificate-benchmark-optimized</span></li>
+                <li>Description: &nbsp<span style="font-weight: 500;">Performance test for encrypted AES certificate lifecycle </span></li>
                 <li>Benchmark Rounds: &nbsp<span style="font-weight: 500;">4</span></li>
                 <li><a href="#benchmarkInfo">Details</a></li>
             </ul>
@@ -155,26 +155,27 @@
                     </tr>
 
                     <tr>
-                         <td>Issue Certificates</td> <td>30</td> <td>0</td> <td>2.5</td> <td>2.27</td> <td>0.04</td> <td>1.48</td> <td>2.1</td>
+                         <td>Issue Certificates</td> <td>1501</td> <td>1</td> <td>50.1</td> <td>0.74</td> <td>0.09</td> <td>0.36</td> <td>49.5</td>
                     </tr>
                     <tr>
-                         <td>Verify a Certificate</td> <td>0</td> <td>30</td> <td>63.3</td> <td>-</td> <td>-</td> <td>-</td> <td>62.9</td>
+                         <td>Verify a Certificate</td> <td>1501</td> <td>1</td> <td>50.1</td> <td>0.02</td> <td>0.00</td> <td>0.01</td> <td>50.1</td>
                     </tr>
                     <tr>
-                         <td>Query All Certificates</td> <td>0</td> <td>10</td> <td>23.0</td> <td>-</td> <td>-</td> <td>-</td> <td>22.8</td>
+                         <td>Query All Certificates</td> <td>1502</td> <td>0</td> <td>50.1</td> <td>18.20</td> <td>0.09</td> <td>11.53</td> <td>32.5</td>
                     </tr>
                     <tr>
-                         <td>Revoke Certificate</td> <td>0</td> <td>30</td> <td>58.8</td> <td>-</td> <td>-</td> <td>-</td> <td>57.9</td>
+                         <td>Revoke Certificate</td> <td>1501</td> <td>1</td> <td>50.1</td> <td>0.69</td> <td>0.07</td> <td>0.35</td> <td>49.4</td>
                     </tr>
                 </table>
             </div>
             <div style="border-bottom: 1px solid #d9d9d9; padding-bottom: 10px;" id="Issue Certificates">
                 <h2>Benchmark round: Issue Certificates</h2>
-                <p>Issuing new certificates (using CreateAsset).</p>
-                <pre style="overflow: visible;white-space: pre-wrap;max-height:100%;">rateControl:
-  type: fixed-load
+                <p>Issuing new certificates (50 TPS for 30 seconds).</p>
+                <pre style="overflow: visible;white-space: pre-wrap;max-height:100%;">txDuration: 30
+rateControl:
+  type: fixed-rate
   opts:
-    transactionLoad: 2
+    tps: 50
 </pre>
                         <h3>Performance metrics for Issue Certificates</h3>
                             <table style="min-width: 100%;">
@@ -182,7 +183,7 @@
                                      <th>Name</th> <th>Succ</th> <th>Fail</th> <th>Send Rate (TPS)</th> <th>Max Latency (s)</th> <th>Min Latency (s)</th> <th>Avg Latency (s)</th> <th>Throughput (TPS)</th>
                                 </tr>
                                 <tr>
-                                     <td>Issue Certificates</td> <td>30</td> <td>0</td> <td>2.5</td> <td>2.27</td> <td>0.04</td> <td>1.48</td> <td>2.1</td>
+                                     <td>Issue Certificates</td> <td>1501</td> <td>1</td> <td>50.1</td> <td>0.74</td> <td>0.09</td> <td>0.36</td> <td>49.5</td>
                                 </tr>
                             </table>
                         <h3>Resource utilization for Issue Certificates</h3>
@@ -190,11 +191,12 @@
 
             <div style="border-bottom: 1px solid #d9d9d9; padding-bottom: 10px;" id="Verify a Certificate">
                 <h2>Benchmark round: Verify a Certificate</h2>
-                <p>Verifying certificates exist (using ReadAsset).</p>
-                <pre style="overflow: visible;white-space: pre-wrap;max-height:100%;">rateControl:
-  type: fixed-load
+                <p>Verifying certificates (50 TPS for 30 seconds).</p>
+                <pre style="overflow: visible;white-space: pre-wrap;max-height:100%;">txDuration: 30
+rateControl:
+  type: fixed-rate
   opts:
-    transactionLoad: 2
+    tps: 50
 </pre>
                         <h3>Performance metrics for Verify a Certificate</h3>
                             <table style="min-width: 100%;">
@@ -202,7 +204,7 @@
                                      <th>Name</th> <th>Succ</th> <th>Fail</th> <th>Send Rate (TPS)</th> <th>Max Latency (s)</th> <th>Min Latency (s)</th> <th>Avg Latency (s)</th> <th>Throughput (TPS)</th>
                                 </tr>
                                 <tr>
-                                     <td>Verify a Certificate</td> <td>0</td> <td>30</td> <td>63.3</td> <td>-</td> <td>-</td> <td>-</td> <td>62.9</td>
+                                     <td>Verify a Certificate</td> <td>1501</td> <td>1</td> <td>50.1</td> <td>0.02</td> <td>0.00</td> <td>0.01</td> <td>50.1</td>
                                 </tr>
                             </table>
                         <h3>Resource utilization for Verify a Certificate</h3>
@@ -210,11 +212,12 @@
 
             <div style="border-bottom: 1px solid #d9d9d9; padding-bottom: 10px;" id="Query All Certificates">
                 <h2>Benchmark round: Query All Certificates</h2>
-                <p>Browsing all certificates (using GetAllAssets).</p>
-                <pre style="overflow: visible;white-space: pre-wrap;max-height:100%;">rateControl:
-  type: fixed-load
+                <p>Browsing certificate records (50 TPS for 30 seconds).</p>
+                <pre style="overflow: visible;white-space: pre-wrap;max-height:100%;">txDuration: 30
+rateControl:
+  type: fixed-rate
   opts:
-    transactionLoad: 1
+    tps: 50
 </pre>
                         <h3>Performance metrics for Query All Certificates</h3>
                             <table style="min-width: 100%;">
@@ -222,7 +225,7 @@
                                      <th>Name</th> <th>Succ</th> <th>Fail</th> <th>Send Rate (TPS)</th> <th>Max Latency (s)</th> <th>Min Latency (s)</th> <th>Avg Latency (s)</th> <th>Throughput (TPS)</th>
                                 </tr>
                                 <tr>
-                                     <td>Query All Certificates</td> <td>0</td> <td>10</td> <td>23.0</td> <td>-</td> <td>-</td> <td>-</td> <td>22.8</td>
+                                     <td>Query All Certificates</td> <td>1502</td> <td>0</td> <td>50.1</td> <td>18.20</td> <td>0.09</td> <td>11.53</td> <td>32.5</td>
                                 </tr>
                             </table>
                         <h3>Resource utilization for Query All Certificates</h3>
@@ -230,11 +233,12 @@
 
             <div style="border-bottom: 1px solid #d9d9d9; padding-bottom: 10px;" id="Revoke Certificate">
                 <h2>Benchmark round: Revoke Certificate</h2>
-                <p>Revoking&#x2F;Deleting certificates (using DeleteAsset).</p>
-                <pre style="overflow: visible;white-space: pre-wrap;max-height:100%;">rateControl:
-  type: fixed-load
+                <p>Revoking certificates to test deletion performance (50 TPS for 30 seconds).</p>
+                <pre style="overflow: visible;white-space: pre-wrap;max-height:100%;">txDuration: 30
+rateControl:
+  type: fixed-rate
   opts:
-    transactionLoad: 2
+    tps: 50
 </pre>
                         <h3>Performance metrics for Revoke Certificate</h3>
                             <table style="min-width: 100%;">
@@ -242,7 +246,7 @@
                                      <th>Name</th> <th>Succ</th> <th>Fail</th> <th>Send Rate (TPS)</th> <th>Max Latency (s)</th> <th>Min Latency (s)</th> <th>Avg Latency (s)</th> <th>Throughput (TPS)</th>
                                 </tr>
                                 <tr>
-                                     <td>Revoke Certificate</td> <td>0</td> <td>30</td> <td>58.8</td> <td>-</td> <td>-</td> <td>-</td> <td>57.9</td>
+                                     <td>Revoke Certificate</td> <td>1501</td> <td>1</td> <td>50.1</td> <td>0.69</td> <td>0.07</td> <td>0.35</td> <td>49.4</td>
                                 </tr>
                             </table>
                         <h3>Resource utilization for Revoke Certificate</h3>
@@ -251,46 +255,48 @@
             <div style="border-bottom: 1px solid #d9d9d9; padding-bottom: 10px;">
                 <h2>Test Environment</h2>
                 <h3>benchmark config</h3>
-                <pre id="benchmarkInfo" style="overflow: visible;white-space: pre-wrap;max-height:100%;">name: certificate-benchmark-test
-description: &#39;Test issuing, verifying, and revoking certificates.&#39;
+                <pre id="benchmarkInfo" style="overflow: visible;white-space: pre-wrap;max-height:100%;">name: certificate-benchmark-optimized
+description: &#39;Performance test for encrypted AES certificate lifecycle &#39;
 workers:
   type: local
   number: 2
 rounds:
   - label: Issue Certificates
-    description: Issuing new certificates (using CreateAsset).
-    txNumber: 30
+    description: Issuing new certificates (50 TPS for 30 seconds).
+    txDuration: 30
     rateControl:
-      type: fixed-load
+      type: fixed-rate
       opts:
-        transactionLoad: 2
+        tps: 50
     workload:
       module: workload&#x2F;issueCertificate.js
   - label: Verify a Certificate
-    description: Verifying certificates exist (using ReadAsset).
-    txNumber: 30
+    description: Verifying certificates (50 TPS for 30 seconds).
+    txDuration: 30
     rateControl:
-      type: fixed-load
+      type: fixed-rate
       opts:
-        transactionLoad: 2
+        tps: 50
     workload:
       module: workload&#x2F;verifyCertificate.js
   - label: Query All Certificates
-    description: Browsing all certificates (using GetAllAssets).
-    txNumber: 10
+    description: Browsing certificate records (50 TPS for 30 seconds).
+    txDuration: 30
     rateControl:
-      type: fixed-load
+      type: fixed-rate
       opts:
-        transactionLoad: 1
+        tps: 50
     workload:
       module: workload&#x2F;queryAllCertificates.js
   - label: Revoke Certificate
-    description: Revoking&#x2F;Deleting certificates (using DeleteAsset).
-    txNumber: 30
+    description: &gt;-
+      Revoking certificates to test deletion performance (50 TPS for 30
+      seconds).
+    txDuration: 30
     rateControl:
-      type: fixed-load
+      type: fixed-rate
       opts:
-        transactionLoad: 2
+        tps: 50
     workload:
       module: workload&#x2F;revokeCertificate.js
 </pre>
