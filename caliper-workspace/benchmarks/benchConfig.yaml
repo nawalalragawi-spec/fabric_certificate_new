@@ -1,6 +1,6 @@
 test:
   name: certificate-benchmark-optimized
-  description: 'Performance test for encrypted AES certificate lifecycle '
+  description: 'Performance test for encrypted AES certificate lifecycle  TPS 100'
   workers:
     type: local
     number: 2
@@ -11,7 +11,7 @@ test:
       rateControl:
         type: fixed-rate
         opts:
-          tps: 50
+          tps: 100
       workload:
         module: workload/issueCertificate.js
 
@@ -21,7 +21,7 @@ test:
       rateControl:
         type: fixed-rate
         opts:
-          tps: 50
+          tps: 100
       workload:
         module: workload/verifyCertificate.js
 
@@ -31,7 +31,7 @@ test:
       rateControl:
         type: fixed-rate
         opts:
-          tps: 50
+          tps: 100
       workload:
         module: workload/queryAllCertificates.js
 
@@ -41,6 +41,6 @@ test:
       rateControl:
         type: fixed-rate
         opts:
-          tps: 50
+          tps: 100
       workload:
         module: workload/revokeCertificate.js
