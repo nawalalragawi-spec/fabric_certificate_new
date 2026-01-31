@@ -1,0 +1,7 @@
+{
+  "index": {
+    "fields": ["ID"]
+  },
+  "name": "index-certificate-id",
+  "type": "json"
+}
