@@ -1,6 +1,6 @@
 test:
   name: certificate-benchmark-optimized
-  description: 'Performance test for encrypted AES+INDEX certificate lifecycle '
+  description: 'Performance test for encrypted AES certificate lifecycle '
   workers:
     type: local
     number: 2
