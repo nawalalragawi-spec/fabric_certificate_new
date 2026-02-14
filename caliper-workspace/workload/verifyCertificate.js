@@ -10,22 +10,37 @@ class VerifyCertificateWorkload extends WorkloadModuleBase {
 
     async submitTransaction() {
         this.txIndex++;
-        // استخدام نفس نمط المعرف المستخدم في عملية الإصدار
+        // استخدام نفس نمط المعرف (ID) الذي استخدمناه في IssueCertificate
         const certID = `cert_${this.workerIndex}_${this.txIndex}`;
+
+        // الهاش الأصلي (Plaintext) الذي نريد التحقق منه 
+        // ملاحظة: يجب أن يكون نفس الهاش الذي تم تشفيره وإرساله في مرحلة الإصدار
+        const originalHash = "hash_data_" + this.txIndex;
+
+        /**
+         * منطق البحث (عمر سعد):
+         * دالة VerifyCertificate في العقد الذكي ستتحقق أولاً:
+         * if cert.IsLocked { return error }
+         * لذا يجب التأكد في ملف benchConfig.yaml من تشغيل دورة Unlock قبل هذه الدورة.
+         */
 
         const request = {
             contractId: 'basic',
-            // التعديل 1: تغيير اسم الدالة إلى VerifyCertificate الموجودة في Go
             contractFunction: 'VerifyCertificate', 
-            // التعديل 2: الدالة تتوقع وسيطين (ID و Hash) حسب العقد الذكي
             contractArguments: [
                 certID, 
-                'dummy_hash_for_now' // يجب أن يطابق الهاش المستخدم عند الإصدار
+                originalHash // نرسل الهاش الصريح ليقوم العقد بفك تشفير المخزن ومقارنته به
             ],
-            readOnly: true
+            readOnly: true // عملية التحقق قراءة فقط حسب منطق Hyperledger Fabric
         };
 
-        await this.sutAdapter.sendRequests(request);
+        try {
+            await this.sutAdapter.sendRequests(request);
+        } catch (error) {
+            // إذا كانت الشهادة مقفلة، كليبر سيسجل فشل المعاملة Transaction Failure
+            // وهذا بحد ذاته نتيجة بحثية تثبت كفاءة نظام الخصوصية لديك
+            console.error(`فشل التحقق من الشهادة ${certID}: ${error.message}`);
+        }
     }
 }
 
