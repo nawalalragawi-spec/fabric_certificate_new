@@ -19,7 +19,6 @@ if [ ! -d "bin" ]; then
 else
     echo "✅ Fabric tools found."
 fi
-
 export PATH=${PWD}/bin:$PATH
 export FABRIC_CFG_PATH=${PWD}/config/
 
@@ -33,15 +32,16 @@ cd test-network
 cd ..
 
 # --------------------------------------------------------
-# 3. نشر العقد الذكي
+# 3. نشر العقد الذكي (مع ملف الخصوصية)
 # --------------------------------------------------------
 echo -e "${GREEN}📜 Step 3: Deploying Smart Contract (Go)...${NC}"
 cd test-network
-./network.sh deployCC -ccn basic -ccp ../asset-transfer-basic/chaincode-go -ccl go
+# تصحيح الخطأ: فصلنا أمر النشر عن أمر الرجوع للمجلد (cd ..) وأضفنا ملف المجموعات
+./network.sh deployCC -ccn basic -ccp ../asset-transfer-basic/chaincode-go -ccl go -cccg ../asset-transfer-basic/chaincode-go/collections_config.json
 cd ..
 
 # --------------------------------------------------------
-# 4. إعداد وتشغيل Caliper (الجزء الذكي)
+# 4. إعداد وتشغيل Caliper
 # --------------------------------------------------------
 echo -e "${GREEN}⚡ Step 4: Configuring & Running Caliper...${NC}"
 cd caliper-workspace
@@ -53,7 +53,7 @@ if [ ! -d "node_modules" ]; then
     npx caliper bind --caliper-bind-sut fabric:2.2
 fi
 
-# ب) البحث عن المفتاح الخاص (Private Key) أوتوماتيكياً
+# ب) البحث عن المفتاح الخاص أوتوماتيكياً
 echo "🔑 Detecting Private Key..."
 KEY_DIR="../test-network/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/keystore"
 PVT_KEY=$(ls $KEY_DIR/*_sk)
@@ -65,15 +65,12 @@ mkdir -p networks
 cat << EOF > networks/networkConfig.yaml
 name: Caliper-Fabric
 version: "2.0.0"
-
 caliper:
   blockchain: fabric
-
 channels:
   - channelName: mychannel
     contracts:
       - id: basic
-
 organizations:
   - mspid: Org1MSP
     identities:
@@ -82,10 +79,10 @@ organizations:
           clientPrivateKey:
             path: '$PVT_KEY'
           clientSignedCert:
-            path: '../test-network/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/signcerts/cert.pem'
+            path: '../test-network/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/signcerts/User1@org1.example.com-cert.pem'
     connectionProfile:
       path: '../test-network/organizations/peerOrganizations/org1.example.com/connection-org1.yaml'
-      discover: true
+    discover: true
 EOF
 
 # د) تشغيل الاختبار
