@@ -1,20 +1,24 @@
 name: Caliper Test
 version: "2.0.0"
+
 caliper:
   blockchain: fabric
+
 channels:
   - channelName: mychannel
     contracts:
-      - id: basic
+      - id: basic  # يجب أن يطابق الاسم الذي استخدمته عند تنصيب العقد
+
 organizations:
   - mspid: Org1MSP
     identities:
       certificates:
         - name: 'User1'
+          # تأكد من وضع اسم ملف الـ Hash الحقيقي هنا
           clientPrivateKey:
-            path: '/workspaces/fabric_certificate_MT/test-network/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/keystore/REPLACE_WITH_ACTUAL_KEY_FILE'
+            path: 'test-network/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/keystore/بقية_اسم_الملف_الحقيقي_sk'
           clientSignedCert:
-            path: '/workspaces/fabric_certificate_MT/test-network/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/signcerts/User1@org1.example.com-cert.pem'
+            path: 'test-network/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/signcerts/User1@org1.example.com-cert.pem'
     connectionProfile:
       path: 'networks/connection-org1.yaml'
       discover: false
