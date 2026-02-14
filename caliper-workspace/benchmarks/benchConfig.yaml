@@ -1,12 +1,12 @@
 test:
   name: certificate-benchmark-optimized
-  description: 'Performance test for encrypted AES certificate lifecycle '
+  description: 'Performance test for encrypted AES certificate lifecycle complying with Omar Saad Protocol'
   workers:
     type: local
     number: 2
   rounds:
     - label: Issue Certificates
-      description: Issuing new certificates (50 TPS for 30 seconds).
+      description: Issuing new certificates (Locked by default as per research).
       txDuration: 30
       rateControl:
         type: fixed-rate
@@ -15,8 +15,22 @@ test:
       workload:
         module: workload/issueCertificate.js
 
+    # --- هذه هي الجولة الناقصة التي يجب إضافتها ---
+    - label: Unlock Certificate
+      description: Simulation of student unlocking the certificate to allow verification.
+      txDuration: 30
+      rateControl:
+        type: fixed-rate
+        opts:
+          tps: 100
+      workload:
+        module: workload/unlockCertificate.js
+        arguments:
+          option: 2 # فتح البيانات الخاصة للمطابقة مع البحث
+    # -----------------------------------------------
+
     - label: Verify a Certificate
-      description: Verifying certificates (50 TPS for 30 seconds).
+      description: Verifying certificates (Will succeed now because they are Unlocked).
       txDuration: 30
       rateControl:
         type: fixed-rate
@@ -26,7 +40,7 @@ test:
         module: workload/verifyCertificate.js
 
     - label: Query All Certificates
-      description: Browsing certificate records (50 TPS for 30 seconds).
+      description: Browsing certificate records (Public Ledger/Hashed data).
       txDuration: 30
       rateControl:
         type: fixed-rate
@@ -36,7 +50,7 @@ test:
         module: workload/queryAllCertificates.js
 
     - label: Revoke Certificate
-      description: Revoking certificates to test deletion performance (50 TPS for 30 seconds).
+      description: Revoking certificates to test deletion performance.
       txDuration: 30
       rateControl:
         type: fixed-rate
