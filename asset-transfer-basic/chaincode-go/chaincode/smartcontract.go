@@ -19,11 +19,11 @@ type SmartContract struct {
 // Certificate describes the details of a digital certificate
 type Certificate struct {
 	ID        string `json:"ID"`
-	CertHash  string `json:"CertHash"`  // البيانات المشفرة (AES Ciphertext)
+	CertHash  string `json:"CertHash"`  // الهاش المشفر بـ AES
 	IssueDate string `json:"IssueDate"`
 	Issuer    string `json:"Issuer"`
-	Owner     string `json:"Owner"`
-	IsLocked  bool   `json:"IsLocked"`  // إضافة حقل القفل لمطابقة بروتوكول عمر سعد
+	Owner     string `json:"Owner"`     // سيتم تخزين المعرف الرقمي للمالك هنا
+	IsLocked  bool   `json:"IsLocked"`  // حالة القفل (قلب البروتوكول)
 }
 
 const AES_KEY = "12345678901234567890123456789012"
@@ -32,7 +32,7 @@ const AES_KEY = "12345678901234567890123456789012"
 func decrypt(encryptedData string) (string, error) {
 	parts := strings.Split(encryptedData, ":")
 	if len(parts) != 3 {
-		return "", fmt.Errorf("invalid encrypted data format")
+		return "", fmt.Errorf("صيغة التشفير غير صحيحة")
 	}
 
 	iv, _ := hex.DecodeString(parts[0])
@@ -52,26 +52,29 @@ func decrypt(encryptedData string) (string, error) {
 	return string(plaintext), nil
 }
 
-// 1. IssueCertificate: التحقق من دور admin وضبط الحالة على Locked تلقائياً
+// 1. IssueCertificate: التحقق من دور admin وضبط الحالة Locked تلقائياً
+// هذا هو التعديل المطلوب لضمان تخزين المالك والتحقق من الصلاحيات
 func (s *SmartContract) IssueCertificate(ctx contractapi.TransactionContextInterface, id string, owner string, issuer string, issueDate string, encryptedHash string) error {
 	
-	// التحقق من سمة الدور (ABAC) لمطابقة ورقة عمر سعد
+	// أ) التحقق من سمة "admin" (ABAC) لضمان أن الجامعة فقط من تصدر الشهادات
 	err := ctx.GetClientIdentity().AssertAttributeValue("role", "admin")
 	if err != nil {
-		return fmt.Errorf("unauthorized: only admins can issue certificates")
+		return fmt.Errorf("غير مصرح: يجب أن تملك دور admin لتتمكن من إصدار شهادة")
 	}
 
+	// ب) التأكد من عدم تكرار المعرف
 	exists, err := s.CertificateExists(ctx, id)
 	if err != nil { return err }
-	if exists { return fmt.Errorf("the certificate %s already exists", id) }
+	if exists { return fmt.Errorf("الشهادة بالمعرف %s موجودة مسبقاً", id) }
 
+	// ج) بناء الشهادة: ضبط المالك (Owner) والحالة Locked (مقفولة) افتراضياً
 	certificate := Certificate{
 		ID:        id,
-		Owner:     owner,
+		Owner:     owner,         // تخزين معرف المالك المار من Caliper
 		Issuer:    issuer,
 		IssueDate: issueDate,
-		CertHash:  encryptedHash,
-		IsLocked:  true, // الحالة الافتراضية مقفلة لتعزيز الخصوصية
+		CertHash:  encryptedHash, // الهاش القادم مشفراً من العميل
+		IsLocked:  true,          // "بروتوكول عمر": الخصوصية تبدأ بالقفل التلقائي
 	}
 
 	certBytes, err := json.Marshal(certificate)
@@ -80,15 +83,14 @@ func (s *SmartContract) IssueCertificate(ctx contractapi.TransactionContextInter
 	return ctx.GetStub().PutState(id, certBytes)
 }
 
-// 2. LockCertificate: السماح للمالك فقط بإعادة قفل الشهادة
+// 2. LockCertificate: المالك فقط يغلق شهادته
 func (s *SmartContract) LockCertificate(ctx contractapi.TransactionContextInterface, id string) error {
 	certificate, err := s.ReadCertificate(ctx, id)
 	if err != nil { return err }
 
-	// التحقق من أن المستدعي هو المالك (Self-Sovereignty)
 	clientID, _ := ctx.GetClientIdentity().GetID()
 	if certificate.Owner != clientID {
-		return fmt.Errorf("unauthorized: only the owner can lock the certificate")
+		return fmt.Errorf("غير مصرح: المالك الفعلي فقط من يمكنه قفل الشهادة")
 	}
 
 	certificate.IsLocked = true
@@ -96,14 +98,14 @@ func (s *SmartContract) LockCertificate(ctx contractapi.TransactionContextInterf
 	return ctx.GetStub().PutState(id, certBytes)
 }
 
-// 3. UnlockCertificate: السماح للمالك فقط بفتح الشهادة للتحقق
+// 3. UnlockCertificate: المالك فقط يفتح الشهادة
 func (s *SmartContract) UnlockCertificate(ctx contractapi.TransactionContextInterface, id string) error {
 	certificate, err := s.ReadCertificate(ctx, id)
 	if err != nil { return err }
 
 	clientID, _ := ctx.GetClientIdentity().GetID()
 	if certificate.Owner != clientID {
-		return fmt.Errorf("unauthorized: only the owner can unlock the certificate")
+		return fmt.Errorf("غير مصرح: المالك الفعلي فقط من يمكنه فتح الشهادة")
 	}
 
 	certificate.IsLocked = false
@@ -111,46 +113,36 @@ func (s *SmartContract) UnlockCertificate(ctx contractapi.TransactionContextInte
 	return ctx.GetStub().PutState(id, certBytes)
 }
 
-// 4. VerifyCertificate: منع التحقق إذا كانت الشهادة مقفلة
+// 4. VerifyCertificate: يمنع التحقق إذا كانت الشهادة مقفلة
 func (s *SmartContract) VerifyCertificate(ctx contractapi.TransactionContextInterface, id string, currentHash string) (bool, error) {
 	certificate, err := s.ReadCertificate(ctx, id)
 	if err != nil { return false, err }
 
-	// إذا كانت الشهادة مقفلة، نرفض المعاملة (جوهر التحكم في الوصول)
+	// منطق الأمان: إذا لم يفتح المالك الشهادة، نرفض محاولة التحقق تماماً
 	if certificate.IsLocked {
-		return false, fmt.Errorf("access denied: certificate is locked by the student")
+		return false, fmt.Errorf("مرفوض: الشهادة مقفلة من قبل الطالب ولا يمكن التحقق منها حالياً")
 	}
 
 	decryptedStoredHash, err := decrypt(certificate.CertHash)
-	if err != nil { return false, fmt.Errorf("failed to decrypt: %v", err) }
+	if err != nil { return false, fmt.Errorf("فشل فك التشفير: %v", err) }
 
 	return decryptedStoredHash == currentHash, nil
 }
 
-// الدوال المساعدة (Read, Exists, Revoke, GetAll)
+// الدوال المساعدة الأساسية
 func (s *SmartContract) ReadCertificate(ctx contractapi.TransactionContextInterface, id string) (*Certificate, error) {
 	certBytes, err := ctx.GetStub().GetState(id)
 	if err != nil || certBytes == nil {
-		return nil, fmt.Errorf("certificate %s does not exist", id)
+		return nil, fmt.Errorf("الشهادة %s غير موجودة", id)
 	}
 	var certificate Certificate
-	err = json.Unmarshal(certBytes, &certificate)
-	return &certificate, err
+	json.Unmarshal(certBytes, &certificate)
+	return &certificate, nil
 }
 
 func (s *SmartContract) CertificateExists(ctx contractapi.TransactionContextInterface, id string) (bool, error) {
 	certBytes, err := ctx.GetStub().GetState(id)
 	return certBytes != nil, nil
-}
-
-func (s *SmartContract) RevokeCertificate(ctx contractapi.TransactionContextInterface, id string) error {
-	// التحقق من دور الأدمن عند الإلغاء أيضاً
-	err := ctx.GetClientIdentity().AssertAttributeValue("role", "admin")
-	if err != nil { return fmt.Errorf("unauthorized") }
-
-	exists, err := s.CertificateExists(ctx, id)
-	if err != nil || !exists { return fmt.Errorf("not found") }
-	return ctx.GetStub().DelState(id)
 }
 
 func (s *SmartContract) GetAllCertificates(ctx contractapi.TransactionContextInterface) ([]*Certificate, error) {
