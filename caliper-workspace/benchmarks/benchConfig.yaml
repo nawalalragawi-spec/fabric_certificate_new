@@ -5,6 +5,7 @@ test:
     type: local
     number: 2
   rounds:
+    # المرحلة 1: الإصدار (تكون الحالة Locked تلقائياً)
     - label: Issue Certificates
       description: Issuing new certificates (Locked by default as per research).
       txDuration: 30
@@ -15,7 +16,7 @@ test:
       workload:
         module: workload/issueCertificate.js
 
-    # --- هذه هي الجولة الناقصة التي يجب إضافتها ---
+    # المرحلة 2: الفتح (بواسطة الطالب للسماح بالتحقق)
     - label: Unlock Certificate
       description: Simulation of student unlocking the certificate to allow verification.
       txDuration: 30
@@ -26,9 +27,9 @@ test:
       workload:
         module: workload/unlockCertificate.js
         arguments:
-          option: 2 # فتح البيانات الخاصة للمطابقة مع البحث
-    # -----------------------------------------------
+          option: 2 
 
+    # المرحلة 3: التحقق (بواسطة جهة العمل/التحقق)
     - label: Verify a Certificate
       description: Verifying certificates (Will succeed now because they are Unlocked).
       txDuration: 30
@@ -39,6 +40,18 @@ test:
       workload:
         module: workload/verifyCertificate.js
 
+    # المرحلة 4: إعادة القفل (بواسطة الطالب لسحب الصلاحية - الميزة المطلوبة)
+    - label: Lock Certificate
+      description: Testing the performance of student revoking access to his certificate.
+      txDuration: 30
+      rateControl:
+        type: fixed-rate
+        opts:
+          tps: 100
+      workload:
+        module: workload/lockCertificate.js
+
+    # المرحلة 5: الاستعلام العام (استعراض السجل العام المشفر)
     - label: Query All Certificates
       description: Browsing certificate records (Public Ledger/Hashed data).
       txDuration: 30
@@ -49,6 +62,7 @@ test:
       workload:
         module: workload/queryAllCertificates.js
 
+    # المرحلة 6: الإلغاء (حذف الشهادة نهائياً)
     - label: Revoke Certificate
       description: Revoking certificates to test deletion performance.
       txDuration: 30
