@@ -18,29 +18,32 @@ class LockCertificateWorkload extends WorkloadModuleBase {
     async submitTransaction() {
         this.txIndex++;
         
-        // استخدام نفس نمط المعرف (ID) المستخدم في دورة الإصدار لضمان استهداف شهادات موجودة فعلاً
+        // استخدام نفس نمط المعرف (ID) المستخدم في دورة الإصدار لضمان استهداف شهادات موجودة
         const certID = `cert_${this.workerIndex}_${this.txIndex}`;
 
         /**
-         * دالة LockCertificate في العقد الذكي تتوقع وسيط واحد وهو ID الشهادة.
-         * العقد الذكي سيتحقق داخلياً أن المستدعي (Invoker) هو المالك.
+         * إعداد طلب المعاملة لدالة LockCertificate
          */
         const request = {
             contractId: 'basic',
             contractFunction: 'LockCertificate',
             contractArguments: [certID],
-            readOnly: false // هذه معاملة كتابة لأنها تغير حالة الشهادة في السجل (Ledger)
+            readOnly: false // هذه معاملة تحديث (Invoke) لتغيير حالة الشهادة
         };
 
         try {
+            // إضافة await هنا تضمن أن السكربت سينتظر نتيجة الشبكة
+            // إذا رفض العقد الذكي المعاملة (مثلاً المستدعي ليس المالك)، سينتقل الكود إلى بلوك catch
             await this.sutAdapter.sendRequests(request);
         } catch (error) {
-            console.error(`فشل عملية قفل الشهادة ${certID}: ${error.message}`);
+            // تسجيل الخطأ في التيرمينال للمساعدة في التصحيح أثناء الاختبار
+            // Caliper سيسجل هذه المعاملة كفشل (Failed Transaction) تلقائياً
+            console.error(`خطأ تقني في قفل الشهادة ${certID}: ${error.message}`);
         }
     }
 
     async cleanupWorkloadModule() {
-        // عمليات التنظيف إن وجدت
+        // عمليات التنظيف عند انتهاء الاختبار
     }
 }
 
